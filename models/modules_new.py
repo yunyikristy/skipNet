@@ -2,7 +2,7 @@ import tensorflow as tf
 from tensorflow.contrib.rnn import GRUCell
 from util.ops import shape_list
 import ops
-
+from text.symbols import symbols
 
 
 def prenet(inputs, is_training, layer_sizes=[256, 128], scope=None):
@@ -168,37 +168,18 @@ def modality_classifier(inputs, is_training):
 def image_decoder(input, is_training):
     batch_size = int(input.get_shape()[0])
     z = tf.layers.dense(input, 1024, activation=tf.nn.relu)
-    G_input = tf.reshape(z, [batch_size, 4, 4, 64])     
+    G = tf.reshape(z, [batch_size, 4, 4, 64])     
 
     filters = [32, 16,8]
     
     for i, n in enumerate(filters):
-        G = ops.deconv_block(G_input, n, 'CD{}_{}'.format(n, i), 4, 2, is_training, reuse = True, norm = 'batch', activation = 'relu')
-        G = ops.deconv_block(G, 3, 'last_layer', 4, 2, is_training, reuse=True, norm=None, activation = 'tanh')
+        G = ops.deconv_block(G, n, 'CD{}_{}'.format(n, i), 4, 2, is_training, reuse = True, norm = 'batch', activation = 'relu')
+    G = ops.deconv_block(G, 3, 'last_layer', 4, 2, is_training, reuse=True, norm=None, activation = 'tanh')
 
-     return G
+    return G
 
-## text decoder scope
 
-def decode(expanded_output):
-    
-    """ Decode the expanded output of the LSTM into a word. """
-    config = self.config
-    expanded_output = self.nn.dropout(expanded_output)
-       
-    # use 2 fc layers to decode
-    temp = self.nn.dense(expanded_output,
-                         units = config.dim_decode_layer,
-                         activation = tf.tanh,
-                         name = 'fc_1')
-    temp = self.nn.dropout(temp)
-    logits = self.nn.dense(temp,
-                           units = config.vocabulary_size,
-                           activation = None,
-                           name = 'fc_2')
-     return logits
-
-def text_decoder(input, idx, is_training):
+def text_decoder(input, idx, txt, is_training):
     with tf.variable_scope('D_txt') as scope: 
         # Setup the LSTM 
         lstm = tf.nn.rnn_cell.LSTMCell(
@@ -210,56 +191,32 @@ def text_decoder(input, idx, is_training):
                 outpt_keep_prob = 1.0 - 0.3,
                 state_keep_prob = 1.0 - 0.3)
 
-        # Initialize the LSTM using the mean context (input)
-        with tf.variable_scope("initialize"):
-            context_mean = tf.reduce_mean(input, axis = 1)
-            initial_memory, initial_output = self.initialize(context_mean)
-            initial_state = initial_memory, initial_output
-
-        # Prepare to run
-        predictions = []
-        if is_training:
-            alphas = []
-            cross_entropies = []
-            predictions_correct = []
-            num_steps = 20                #config.max_caption_length
-            last_output = initial_output
-            last_memory = initial_memory
-            last_word = tf.zeros([config.batch_size], tf.int32)
-        else:
-            num_steps = 1
-        last_state = last_memory, last_output
-
-        # Generate the words one by one
+        initial_state = input
+        
+        # Embeddings for text
+        embedding_table = tf.get_variable(
+          'text_embedding', [len(symbols), 128], dtype=tf.float32,
+          initializer=tf.truncated_normal_initializer(stddev=0.5)) 
+        
+        last_word = tf.zeros([config.batch_size], tf.int32)
+        last_state = initial_state
         
         # Embed the last word        
-        word_embed = tf.nn.embedding_lookup(embedding_matrix,
+        word_embed = tf.nn.embedding_lookup(embedding_table,
                                                  last_word)
         # Apply the LSTM
-        current_input = tf.concat([context, word_embed], 1)
-        output, state = lstm(current_input, last_state)
-        memory, _ = state
-
-         # Decode the expanded output of LSTM into a word
-        expanded_output = tf.concat([output,
-                                    context,
-                                    word_embed],
-                                    axis = 1)
-        logits = decode(expanded_output)
+        output, state = lstm(word_embed, last_state)
+        output, state = lstm(output, state)
+        
+        # Compute logits
+        logits = tf.layers.dense(output, len(symbols))
         probs = tf.nn.softmax(logits)
         prediction = tf.argmax(logits, 1)
-        predictions.append(prediction)
-        
+                
         # compute the loss for this step
         cross_entropy = tf.nn.sparse_softmax_cross_entropy_with_logits(
-                    labels = sentences[:, idx],
+                    labels = txt[:, idx],
                     logits = logits)
-                masked_cross_entropy = cross_entropy * masks[:, idx]
-                #cross_entropies.append(masked_cross_entropy)
- 
-                last_output = output
-                last_memory = memory
-                last_state = state
-                last_word = sentences[:, idx] 
-
-        return masked_cross_entropy
+                
+                
+        return cross_entropy

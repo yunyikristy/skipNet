@@ -91,7 +91,7 @@ class SkipNet():
         with tf.variable_scope('M', reuse = tf.AUDO_REUSE) as scope:
             # Global tokens
             tokens = tf.get_variable(
-            'global_tokens', [hp.num_gst, hp.embed_depth // hp.num_heads], dtype=tf.float32,
+            'global_tokens', [hp.num_gst, hp.style_embed_depth // hp.num_heads], dtype=tf.float32,
             initializer=tf.truncated_normal_initializer(stddev=0.5))
             self.tokens = tokens
                 
@@ -199,8 +199,9 @@ class SkipNet():
             num_steps = self.txt_lenth_B
             for idx in range(num_stpes):    
                 # text loss cross_entropy loss per-step
-                cross_entropy_A = text_decoder(self.u_txt_A,idx,is_train=self.is_training)
-                cross_entropy_B = text_decoder(self.u_txt_B,idx,is_train=self.is_training)
+                cross_entropy_A = text_decoder(self.u_txt_A,idx, embedded_txt_inputs_A, is_train=self.is_training)
+                cross_entropy_B = text_decoder(self.u_txt_B,idx, embedded_txt_inputs_B,
+is_train=self.is_training)
                 
             # compute final loss for text
             cross_entropies_A = tf.stack(cross_entropies_A, axis = 1)
