@@ -36,8 +36,9 @@ class MultiheadAttention():
       raise ValueError("Multi head attention requires that num_units is a"
                        " multiple of {}".format(num_heads))
 
-    with tf.variable_scope("Multihead-attention"):
-      q = tf.layers.conv1d(self.query, self.num_units, 1)
+    with tf.variable_scope("Multihead-attention", reuse=tf.AUTO_REUSE):
+      #q = tf.layers.conv1d(self.query, self.num_units, 1)
+      q = self.query
       k =  tf.layers.conv1d(self.value, self.num_units, 1)
       v = self.value
       qs, ks, vs = self._split_heads(q, k, v)
@@ -96,6 +97,10 @@ class MultiheadAttention():
     num_units = qs.get_shape()[-1].value
     dtype = qs.dtype
 
+    qs = tf.layers.dense(qs, self.num_units)
+    ks = tf.layers.dense(ks, self.num_units)
+    vs = tf.layers.dense(vs, self.num_units)
+
     v = tf.get_variable("attention_v", [num_units], dtype=dtype)
     if self.normalize:
       #https://github.com/tensorflow/tensorflow/blob/r1.7/tensorflow/contrib/seq2seq/python/ops/attention_wrapper.py#L470
@@ -115,7 +120,8 @@ class MultiheadAttention():
     else:
       # Single layer multilayer perceptron.
       add = tf.reduce_sum(v * tf.tanh(ks + qs), [-1], keep_dims=True)
-
+    
+    add = tf.layers.dense(add, self.num_units)
     # Compute attention weights.
     weights = tf.nn.softmax(tf.transpose(add, [0, 1, 3, 2]), name="mlp_attention_weights")
     # Compute attention context.
@@ -131,5 +137,3 @@ class MultiheadAttention():
     x = tf.transpose(x, [0, 2, 1, 3])
     x_shape = shape_list(x)
     return tf.reshape(x, x_shape[:-2] + [self.num_heads * x_shape[-1]])
-  
-
