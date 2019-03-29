@@ -182,15 +182,17 @@ def image_decoder(input, is_training):
 def text_decoder(input, idx, txt, is_training):
     with tf.variable_scope('D_txt') as scope: 
         # Setup the LSTM 
-        lstm = tf.nn.rnn_cell.LSTMCell(
-                128, initializer = tf.random_uniform_initializer(
-                minval = -0.08, maxval = 0.08))
-        lstm = tf.nn.rnn_cell.DropoutWrapper(
+        lstm_sizes = [128 ,128]
+        lstms = [tf.nn.rnn_cell.LSTMCell(
+                size, initializer = tf.random_uniform_initializer(
+                minval = -0.08, maxval = 0.08)) for size in lstm_sizes]
+        drops = [tf.nn.rnn_cell.DropoutWrapper(
                 lstm, 
                 input_keep_prob = 1.0 - 0.3,
                 outpt_keep_prob = 1.0 - 0.3,
-                state_keep_prob = 1.0 - 0.3)
+                state_keep_prob = 1.0 - 0.3) for lstm in lstms]
 
+        lstm = tf.contrib.rnn.MultiRNNCell(drops)
                 
         # Embeddings for text
         embedding_table = tf.get_variable(
@@ -204,8 +206,8 @@ def text_decoder(input, idx, txt, is_training):
         word_embed = tf.nn.embedding_lookup(embedding_table,
                                                  last_word)
         # Apply the LSTM
-        output, state = lstm(word_embed, last_state)
-        output, state = lstm(output, state)
+        output, state = tf.nn.dynamic_rnn(lstm, word_embed, last_state)
+        #output, state = lstm(output, state)
         
         # Compute logits
         logits = tf.layers.dense(output, len(symbols))
