@@ -191,8 +191,7 @@ def text_decoder(input, idx, txt, is_training):
                 outpt_keep_prob = 1.0 - 0.3,
                 state_keep_prob = 1.0 - 0.3)
 
-        initial_state = input
-        
+                
         # Embeddings for text
         embedding_table = tf.get_variable(
           'text_embedding', [len(symbols), 128], dtype=tf.float32,
@@ -213,10 +212,13 @@ def text_decoder(input, idx, txt, is_training):
         probs = tf.nn.softmax(logits)
         prediction = tf.argmax(logits, 1)
                 
+        
         # compute the loss for this step
         cross_entropy = tf.nn.sparse_softmax_cross_entropy_with_logits(
                     labels = txt[:, idx],
                     logits = logits)
-                
-                
+
+        last_state = state
+        last_word = tf.nn.embedding_lookup(embedding_tabel, output)
+        
         return cross_entropy
