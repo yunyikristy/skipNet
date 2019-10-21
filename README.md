@@ -3,6 +3,9 @@
 It is a Tensorflow implementation of 'Unpaired Image-to-Speech Synthesis with Multimodal Information Bottleneck' ICCV 2019
 https://arxiv.org/abs/1908.07094
 
+Copyright (c) Microsoft Corporation. All rights reserved.
+Licensed under the MIT License.
+
 Installing Dependencies
 1. Install Python 3
 2. Install the latest version of TensorFlow for your platform. For better performance, install with GPU support if it's available. This code works with TensorFlow 1.4.
