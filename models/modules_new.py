@@ -1,3 +1,7 @@
+# Copyright (c) Microsoft Corporation. All rights reserved.
+
+# Licensed under the MIT License.
+
 import tensorflow as tf
 from tensorflow.contrib.rnn import GRUCell
 from util.ops import shape_list

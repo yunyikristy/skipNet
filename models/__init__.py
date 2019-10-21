@@ -1,3 +1,7 @@
+# Copyright (c) Microsoft Corporation. All rights reserved.
+
+# Licensed under the MIT License.
+
 from .m3d_gan import M3D
 
 

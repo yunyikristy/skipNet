@@ -1,3 +1,7 @@
+# Copyright (c) Microsoft Corporation. All rights reserved.
+
+# Licensed under the MIT License.
+
 class ValueWindow():
   def __init__(self, window_size=100):
     self._window_size = window_size

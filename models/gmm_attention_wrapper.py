@@ -1,3 +1,7 @@
+# Copyright (c) Microsoft Corporation. All rights reserved.
+
+# Licensed under the MIT License.
+
 import tensorflow as tf
 from collections import namedtuple
 from tensorflow.python.ops import rnn_cell_impl

@@ -1,3 +1,7 @@
+# Copyright (c) Microsoft Corporation. All rights reserved.
+
+# Licensed under the MIT License.
+
 # Note: this doesn't include tensorflow or tensorflow-gpu because the package you need to install
 # depends on your platform. It is assumed you have already installed tensorflow.
 falcon==1.2.0
